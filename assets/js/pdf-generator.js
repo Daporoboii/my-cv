@@ -1,6 +1,5 @@
 function getPrintPageUrl() {
-  // Read the GitHub Pages project path from the theme stylesheet URL.
-  // This works for both user sites (/) and project sites (/my-cv/).
+  // Derive the GitHub Pages project path from the theme stylesheet URL.
   const stylesheet = document.getElementById("theme-style");
   const stylesheetHref = stylesheet?.getAttribute("href");
 
@@ -9,14 +8,17 @@ function getPrintPageUrl() {
   }
 
   const stylesheetPath = new URL(stylesheetHref, window.location.origin).pathname;
-  const basePath = stylesheetPath
-    .replace(/\\/assets\\/css\\/main\\.css$/, "")
-    .replace(/\\/$/, "");
+  const stylesheetSuffix = "/assets/css/main.css";
 
+  if (!stylesheetPath.endsWith(stylesheetSuffix)) {
+    throw new Error("The theme stylesheet URL has an unexpected path.");
+  }
+
+  const basePath = stylesheetPath.slice(0, -stylesheetSuffix.length);
   return new URL(`${basePath}/print`, window.location.origin);
 }
 
-function print() {
+function openPrintDialog() {
   let printURL;
 
   try {
@@ -41,14 +43,6 @@ function print() {
     },
     { once: true }
   );
-
-  printWindow.addEventListener(
-    "afterprint",
-    function () {
-      printWindow.close();
-    },
-    { once: true }
-  );
 }
 
 function generatePDF() {
@@ -69,12 +63,30 @@ function generatePDF() {
       return response.text();
     })
     .then((html) => {
+      const parsedDocument = new DOMParser().parseFromString(html, "text/html");
+      const sourceWrapper = parsedDocument.querySelector(".wrapper");
+
+      if (!sourceWrapper) {
+        throw new Error("The print page does not contain a CV wrapper.");
+      }
+
+      // Render the print-page content in the current document so the
+      // already-loaded theme stylesheets apply to html2pdf.
       const container = document.createElement("div");
-      container.innerHTML = html;
+      container.appendChild(sourceWrapper.cloneNode(true));
+      Object.assign(container.style, {
+        position: "fixed",
+        left: "-12000px",
+        top: "0",
+        width: "1200px",
+        background: "#ffffff",
+        zIndex: "-1",
+      });
+      document.body.appendChild(container);
 
       const name =
         document.querySelector(".name")?.textContent?.trim() || "Resume";
-      const filename = `${name.replace(/\\s+/g, "_")}_Resume.pdf`;
+      const filename = `${name.replace(/\s+/g, "_")}_Resume.pdf`;
 
       const opt = {
         margin: 8,
@@ -85,6 +97,7 @@ function generatePDF() {
           useCORS: true,
           letterRendering: true,
           windowWidth: 1200,
+          backgroundColor: "#ffffff",
         },
         jsPDF: {
           unit: "mm",
@@ -96,11 +109,11 @@ function generatePDF() {
         },
       };
 
-      html2pdf()
+      return html2pdf()
         .set(opt)
-        .from(container)
+        .from(container.firstElementChild)
         .save()
-        .catch((err) => console.error("Error generating PDF:", err));
+        .finally(() => container.remove());
     })
-    .catch((err) => console.error("Error fetching print layout:", err));
+    .catch((err) => console.error("Error generating PDF:", err));
 }
