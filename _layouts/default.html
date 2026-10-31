@@ -9,11 +9,11 @@
 {% include head.html %}
 
 <body>
-  <button onclick="openPrintDialog()" class="print-button d-print-none">
+  <button onclick="window.print()" class="print-button d-print-none">
     <i class="fas fa-file-pdf"></i>Print
   </button>
 
-  <button onclick="generatePDF()" class="pdf-button d-print-none" id="pdfButton">
+  <button onclick="window.print()" class="pdf-button d-print-none" id="pdfButton">
     <i class="fas fa-file-pdf"></i>PDF
   </button>
 
@@ -28,7 +28,6 @@
   {% include footer.html %}
 
   {% include scripts.html %}
-  <script src="{{ site.baseurl }}/assets/js/pdf-generator.js"></script>
 </body>
 
 </html>
