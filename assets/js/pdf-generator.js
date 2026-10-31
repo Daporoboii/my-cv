@@ -1,6 +1,31 @@
+function getPrintPageUrl() {
+  // Read the GitHub Pages project path from the theme stylesheet URL.
+  // This works for both user sites (/) and project sites (/my-cv/).
+  const stylesheet = document.getElementById("theme-style");
+  const stylesheetHref = stylesheet?.getAttribute("href");
+
+  if (!stylesheetHref) {
+    throw new Error("Unable to determine the site's base path.");
+  }
+
+  const stylesheetPath = new URL(stylesheetHref, window.location.origin).pathname;
+  const basePath = stylesheetPath
+    .replace(/\\/assets\\/css\\/main\\.css$/, "")
+    .replace(/\\/$/, "");
+
+  return new URL(`${basePath}/print`, window.location.origin);
+}
+
 function print() {
-  // Resolve the print page relative to the current GitHub Pages project path.
-  const printURL = new URL("print", window.location.href);
+  let printURL;
+
+  try {
+    printURL = getPrintPageUrl();
+  } catch (error) {
+    console.error("Unable to open the print page:", error);
+    return;
+  }
+
   const printWindow = window.open(printURL.href, "_blank");
 
   if (!printWindow) {
@@ -8,22 +33,35 @@ function print() {
     return;
   }
 
-  printWindow.addEventListener("load", function () {
-    printWindow.focus();
-    printWindow.print();
-  });
+  printWindow.addEventListener(
+    "load",
+    function () {
+      printWindow.focus();
+      printWindow.print();
+    },
+    { once: true }
+  );
 
-  // Do not close the window on a timer: the print dialog may still be open.
-  printWindow.addEventListener("afterprint", function () {
-    printWindow.close();
-  });
+  printWindow.addEventListener(
+    "afterprint",
+    function () {
+      printWindow.close();
+    },
+    { once: true }
+  );
 }
 
 function generatePDF() {
-  // Get the print layout URL relative to the GitHub Pages project path.
-  const printURL = new URL("print", window.location.href);
+  let printURL;
 
-  fetch(printURL)
+  try {
+    printURL = getPrintPageUrl();
+  } catch (error) {
+    console.error("Unable to determine the print page URL:", error);
+    return;
+  }
+
+  fetch(printURL.href)
     .then((response) => {
       if (!response.ok) {
         throw new Error(`Unable to load print layout: HTTP ${response.status}`);
@@ -34,8 +72,9 @@ function generatePDF() {
       const container = document.createElement("div");
       container.innerHTML = html;
 
-      const name = document.querySelector(".name")?.textContent?.trim() || "Resume";
-      const filename = `${name.replace(/\s+/g, "_")}_Resume.pdf`;
+      const name =
+        document.querySelector(".name")?.textContent?.trim() || "Resume";
+      const filename = `${name.replace(/\\s+/g, "_")}_Resume.pdf`;
 
       const opt = {
         margin: 8,
