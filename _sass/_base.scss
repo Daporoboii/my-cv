@@ -181,7 +181,16 @@ p {
   .recommendations-section,
   .educations-section {
     .item {
-      margin-bottom: 30px;
+      margin-bottom: 16px;
+    }
+  }
+
+  .certifications-section {
+    .item {
+      margin-bottom: 8px;
+    }
+    .cert-org {
+      margin-bottom: 0;
     }
   }
   .upper-row,
@@ -231,7 +240,7 @@ p {
       margin-bottom: 30px;
     }
     .item {
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
   }
   .oss-section {
@@ -266,7 +275,7 @@ p {
 
 .skillset {
   .item {
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     overflow: hidden;
   }
   .level-title {
