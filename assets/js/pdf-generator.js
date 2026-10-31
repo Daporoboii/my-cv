@@ -1,47 +1,62 @@
 function print() {
-  const printWindow = window.open("/print", "_blank");
-  printWindow.onload = function () {
+  // Resolve the print page relative to the current GitHub Pages project path.
+  const printURL = new URL("print", window.location.href);
+  const printWindow = window.open(printURL.href, "_blank");
+
+  if (!printWindow) {
+    console.error("The print window was blocked by the browser.");
+    return;
+  }
+
+  printWindow.addEventListener("load", function () {
+    printWindow.focus();
     printWindow.print();
-    // Close the print window after a delay
-    setTimeout(() => printWindow.close(), 500);
-  };
+  });
+
+  // Do not close the window on a timer: the print dialog may still be open.
+  printWindow.addEventListener("afterprint", function () {
+    printWindow.close();
+  });
 }
 
 function generatePDF() {
-  // Get the print layout URL
-  const printURL = new URL("print", window.location.href).href;
+  // Get the print layout URL relative to the GitHub Pages project path.
+  const printURL = new URL("print", window.location.href);
 
-  // Fetch the print layout content
   fetch(printURL)
-    .then((response) => response.text())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`Unable to load print layout: HTTP ${response.status}`);
+      }
+      return response.text();
+    })
     .then((html) => {
-      // Create a temporary container
       const container = document.createElement("div");
       container.innerHTML = html;
 
-      // Get name from the DOM (as defined in data.yml)
-      const name = document.querySelector(".name").textContent;
-      // Format filename: replace spaces with underscores and append _resume.pdf
+      const name = document.querySelector(".name")?.textContent?.trim() || "Resume";
       const filename = `${name.replace(/\s+/g, "_")}_Resume.pdf`;
 
-      // Configure pdf options
       const opt = {
-        margin: 10,
-        filename: filename,
+        margin: 8,
+        filename,
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
           scale: 2,
           useCORS: true,
           letterRendering: true,
+          windowWidth: 1200,
         },
         jsPDF: {
           unit: "mm",
           format: "a4",
           orientation: "portrait",
         },
+        pagebreak: {
+          mode: ["css", "legacy"],
+        },
       };
 
-      // Generate PDF
       html2pdf()
         .set(opt)
         .from(container)
